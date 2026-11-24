@@ -1,0 +1,655 @@
+﻿<!DOCTYPE html>
+<html lang="ur" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KK Product Catalog</title>
+<style>
+  :root{
+    --brand:#0b6e4f; --brand-dark:#075c41; --bg:#f5f7f6;
+    --card:#ffffff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb;
+    --accent:#f59e0b; --danger:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:var(--bg); color:var(--text); padding-bottom:90px;
+  }
+  header{
+    background:var(--brand); color:#fff; padding:14px 16px;
+    position:sticky; top:0; z-index:50; box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1{font-size:18px; font-weight:600; margin-bottom:10px;}
+  .search-wrap{position:relative;}
+  .search-wrap input{
+    width:100%; padding:12px 40px 12px 14px; border-radius:10px;
+    border:none; font-size:15px; outline:none;
+  }
+  .search-wrap .clear{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; font-size:20px; color:#999; cursor:pointer;
+    display:none;
+  }
+  .stats{
+    font-size:12px; opacity:.85; margin-top:8px;
+  }
+
+  .container{padding:12px; max-width:1200px; margin:0 auto;}
+
+  .product-list{display:grid; gap:10px;}
+  .product{
+    background:var(--card); border-radius:12px; padding:14px;
+    display:flex; justify-content:space-between; align-items:center;
+    box-shadow:0 1px 4px rgba(0,0,0,.06); border:1px solid var(--border);
+    transition:transform .1s;
+  }
+  .product:active{transform:scale(.995);}
+  .product-info{flex:1; min-width:0; padding-right:10px;}
+  .product-name{font-size:14px; font-weight:600; line-height:1.3; word-wrap:break-word;}
+  .product-meta{
+    display:flex; gap:12px; margin-top:6px; font-size:12px; color:var(--muted);
+  }
+  .product-code{background:#eef2ff; color:#3730a3; padding:2px 8px; border-radius:6px; font-weight:600;}
+  .product-rate{background:#ecfdf5; color:var(--brand); padding:2px 8px; border-radius:6px; font-weight:700;}
+  .add-btn{
+    background:var(--brand); color:#fff; border:none; border-radius:50%;
+    width:42px; height:42px; font-size:22px; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .add-btn:active{background:var(--brand-dark);}
+  .add-btn.in-cart{background:var(--accent);}
+
+  .empty{text-align:center; padding:40px 20px; color:var(--muted);}
+
+  /* Cart bottom bar */
+  .cart-bar{
+    position:fixed; bottom:0; left:0; right:0; background:#fff;
+    border-top:1px solid var(--border); padding:12px 16px;
+    display:flex; justify-content:space-between; align-items:center;
+    box-shadow:0 -4px 12px rgba(0,0,0,.08); z-index:60; cursor:pointer;
+  }
+  .cart-bar-info{display:flex; flex-direction:column;}
+  .cart-bar-info small{color:var(--muted); font-size:12px;}
+  .cart-bar-info strong{color:var(--brand); font-size:18px;}
+  .cart-bar button{
+    background:var(--brand); color:#fff; border:none;
+    padding:12px 24px; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer;
+  }
+
+  /* Modal */
+  .modal{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
+    z-index:100; align-items:flex-end;
+  }
+  .modal.show{display:flex;}
+  .modal-content{
+    background:#fff; width:100%; max-height:90vh; border-radius:16px 16px 0 0;
+    padding:18px; overflow-y:auto; animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(100%);} to{transform:translateY(0);}}
+  .modal-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .modal-header h2{font-size:17px; font-weight:700;}
+  .close-x{background:none; border:none; font-size:26px; color:var(--muted); cursor:pointer;}
+
+  .cart-item{
+    display:flex; align-items:center; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .cart-item-info{flex:1; min-width:0;}
+  .cart-item-info .name{font-size:13px; font-weight:600;}
+  .cart-item-info .rate{font-size:12px; color:var(--muted);}
+  .qty-controls{display:flex; align-items:center; gap:6px;}
+  .qty-controls button{
+    width:28px; height:28px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; font-size:16px; font-weight:700;
+  }
+  .qty-controls input{
+    width:48px; text-align:center; padding:5px; border:1px solid var(--border);
+    border-radius:6px; font-size:13px; font-weight:600;
+  }
+  .line-total{font-size:13px; font-weight:700; color:var(--brand); min-width:60px; text-align:right;}
+  .remove-btn{background:none; border:none; color:var(--danger); font-size:18px; cursor:pointer;}
+
+  .totals{display:flex; justify-content:space-between; padding:14px 0; font-size:16px; font-weight:700;}
+  .totals span:last-child{color:var(--brand);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px;}
+  .field input, .field textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--border);
+    border-radius:9px; font-size:14px; outline:none; font-family:inherit;
+  }
+  .field input:focus, .field textarea:focus{border-color:var(--brand);}
+
+  .btn-primary{
+    width:100%; background:var(--brand); color:#fff; border:none;
+    padding:14px; border-radius:10px; font-size:15px; font-weight:700;
+    cursor:pointer; margin-top:8px;
+  }
+  .btn-primary:disabled{opacity:.6; cursor:not-allowed;}
+  .btn-secondary{
+    width:100%; background:#fff; color:var(--brand); border:1px solid var(--brand);
+    padding:12px; border-radius:10px; font-size:14px; font-weight:600;
+    cursor:pointer; margin-top:8px;
+  }
+
+  .success-msg{
+    text-align:center; padding:24px 0;
+  }
+  .success-msg .check{
+    width:64px; height:64px; border-radius:50%; background:#ecfdf5;
+    color:var(--brand); display:flex; align-items:center; justify-content:center;
+    font-size:34px; margin:0 auto 14px;
+  }
+  .success-msg h3{font-size:18px; margin-bottom:8px;}
+  .success-msg p{color:var(--muted); font-size:13px; margin-bottom:16px;}
+  .order-id{background:#f3f4f6; padding:8px 14px; border-radius:8px; font-family:monospace; font-size:13px; display:inline-block;}
+
+  .toast{
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1f2937; color:#fff; padding:10px 20px; border-radius:10px;
+    font-size:13px; opacity:0; pointer-events:none; transition:all .25s; z-index:200;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media(min-width:768px){
+    .product-list{grid-template-columns:1fr 1fr;}
+    .modal{justify-content:center; align-items:center;}
+    .modal-content{max-width:500px; border-radius:16px; max-height:85vh;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛒 KK Product Catalog</h1>
+  <div class="search-wrap">
+    <input id="searchInput" type="text" placeholder="سرچ کریں: نام، کوڈ یا قیمت..." autocomplete="off" />
+    <button class="clear" id="clearBtn">&times;</button>
+  </div>
+  <div class="stats" id="stats">Loading...</div>
+</header>
+
+<div class="container">
+  <div class="product-list" id="productList"></div>
+  <div class="empty" id="emptyState" style="display:none;">
+    <p>😕 کوئی پروڈکٹ نہیں ملی</p>
+  </div>
+</div>
+
+<!-- Fixed Cart Bar -->
+<div class="cart-bar" id="cartBar" style="display:none;">
+  <div class="cart-bar-info">
+    <small id="cartCountLabel">0 items</small>
+    <strong id="cartTotalLabel">Rs 0</strong>
+  </div>
+  <button id="viewCartBtn">View Cart ➔</button>
+</div>
+
+<!-- Cart Modal -->
+<div class="modal" id="cartModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🛍️ Your Order</h2>
+      <button class="close-x" onclick="closeModal('cartModal')">&times;</button>
+    </div>
+    <div id="cartItemsContainer"></div>
+    <div id="cartTotalsContainer"></div>
+    <div id="checkoutForm">
+      <div class="field">
+        <label>Customer Name *</label>
+        <input type="text" id="customerName" placeholder="آپ کا نام" />
+      </div>
+      <div class="field">
+        <label>Phone Number *</label>
+        <input type="tel" id="customerPhone" placeholder="03XX-XXXXXXX" />
+      </div>
+      <div class="field">
+        <label>Address / Notes (Optional)</label>
+        <textarea id="customerNotes" rows="2" placeholder="پتہ یا کوئی ہدایت..."></textarea>
+      </div>
+      <button class="btn-primary" id="placeOrderBtn" onclick="placeOrder()">✅ Confirm Order</button>
+    </div>
+    <div id="orderSuccess" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ Firebase SDK ============ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* =========================================================
+   🔥 اپنی Firebase config یہاں ڈالیں
+   (Firebase Console → Project Settings → Your apps)
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+/* =========================================================
+   📦 پروڈکٹ ڈیٹا (آپ کی Excel شیٹ سے)
+   ========================================================= */
+const PRODUCTS = [
+  {code:49,name:"20 ml POLISH B 50 OFF",rate:230},
+  {code:55,name:"50 ml WHITE LIQUID",rate:120},
+  {code:56,name:"100 ml WHITE LIQUID",rate:200},
+  {code:58,name:"TUBE BURGANDY 430/=",rate:430},
+  {code:60,name:"TUBE LIGHTEN 430/=",rate:430},
+  {code:63,name:"SHOE SHINER BLACK",rate:370},
+  {code:64,name:"70 GM BLACK CAT SMALL",rate:250},
+  {code:66,name:"POWDER VELTINE 70gm",rate:170},
+  {code:70,name:"POWDER PASSION 70gm",rate:170},
+  {code:71,name:"POWDER ROMANCE 70gm",rate:170},
+  {code:73,name:"BRAS 100ml",rate:450},
+  {code:74,name:"BRASS 200ml 750/=",rate:750},
+  {code:75,name:"STEEL CLEANER 500 ml",rate:650},
+  {code:76,name:"GLASS CLEANER 500 ml",rate:700},
+  {code:77,name:"GLASS CLEANER LAVENDER 500 ml",rate:700},
+  {code:78,name:"TOILET CLEANER 250 ml",rate:260},
+  {code:79,name:"TOILET CLEANER 500 ml",rate:450},
+  {code:80,name:"DRANEX 375gm",rate:600},
+  {code:81,name:"WHITE PHENYL 2.75 ML 100 SAVE",rate:500},
+  {code:83,name:"BLEACH 500ml",rate:500},
+  {code:84,name:"BLEACH LAVENDER 500ml",rate:500},
+  {code:85,name:"REVIVE ALL 250ml (R)",rate:800},
+  {code:86,name:"REVIVE ALL 250ml (A)",rate:800},
+  {code:87,name:"REVIVE ALL 250ml (C)",rate:800},
+  {code:88,name:"RABBITE BLUE 100ml NP",rate:180},
+  {code:89,name:"AUTO SHINE TIN 220gm",rate:650},
+  {code:92,name:"KITCHEN CLEANER 500 ml",rate:650},
+  {code:98,name:"INS OIL SPRAY 450 ml",rate:620},
+  {code:99,name:"WHITE PHENYL 450 ml",rate:625},
+  {code:101,name:"BLEACH POWER 500ML 70 SAVE",rate:470},
+  {code:103,name:"INSECT POWDER 100gm",rate:400},
+  {code:104,name:"LED REFILL 45ml",rate:440},
+  {code:105,name:"LED HEATER + REFILL 45ml",rate:625},
+  {code:106,name:"MOSQUITO COIL PACK",rate:150},
+  {code:107,name:"REPELLENT LOTION 60ml",rate:250},
+  {code:108,name:"WHITE PHENYL 225ml",rate:475},
+  {code:116,name:"90mL B POLISH 750/=",rate:750},
+  {code:118,name:"STARCH SPRAY 100 SAVE NEW",rate:875},
+  {code:119,name:"45 ml BLACK (CITY)",rate:445},
+  {code:123,name:"20 ml B POLISH (CITY)",rate:230},
+  {code:132,name:"75 ml B LIQUID/450",rate:450},
+  {code:133,name:"75 ml D LIQUID/ 450",rate:450},
+  {code:134,name:"75 ml N LIQUID=/450",rate:450},
+  {code:136,name:"45 ml DTANCITY)",rate:445},
+  {code:137,name:"TUBE NEAUTRAL 430/=",rate:430},
+  {code:141,name:"SURFACE FLORAL 400/=",rate:400},
+  {code:142,name:"SURFACE 500ml(LEMON)",rate:400},
+  {code:143,name:"SURFACE LEVENDER",rate:400},
+  {code:144,name:"SURFACE 500ml(PINE)",rate:400},
+  {code:147,name:"90 ml (D) POLISH 750/=",rate:750},
+  {code:151,name:"TUBE 45 ml D 430/=",rate:430},
+  {code:152,name:"300 GM BLACK CAT LARG",rate:480},
+  {code:153,name:"PRICKLY HEAT POWDER 125GM",rate:195},
+  {code:154,name:"20ml D POLISH (CITY)",rate:230},
+  {code:156,name:"TUBE 45 ml B 430/=",rate:430},
+  {code:157,name:"TUBE WHITE 430/=",rate:430},
+  {code:161,name:"SURFACE FLORAL 200ML",rate:170},
+  {code:170,name:"DISHWASH LIQUID 475ML",rate:300},
+  {code:175,name:"200 ml WHITE LIQUID",rate:290},
+  {code:177,name:"RABBIT BLUE 200 ML",rate:275},
+  {code:201,name:"SHOE SHINER NEATURAL 370/=",rate:370},
+  {code:202,name:"GLEANT DISINFACT ALL P. SAPRAY 500 ml",rate:700},
+  {code:204,name:"AUTO SHINE TUBE 83GM 40 SAVE",rate:640},
+  {code:205,name:"WHITE LIQ 100ML 25SAVE",rate:200},
+  {code:206,name:"45 ML POLISH BLACK 100 SAVE",rate:345},
+  {code:208,name:"BLEACH LAVN 500ML 50 SAVE",rate:500},
+  {code:209,name:"SHOE SHANIR TWIN 100 SAVE",rate:640},
+  {code:210,name:"POWDER NEW VINTAGE 70 GM",rate:185},
+  {code:211,name:"GLASS CLEANER 120 SAVE",rate:700},
+  {code:212,name:"75ML LIQ N 100 OFF",rate:450},
+  {code:213,name:"75ML LIQ D 100 OFF",rate:450},
+  {code:214,name:"75ML LIQ B 100 OFF",rate:450},
+  {code:215,name:"SHOE SHANIR N TWIN 100 SAVE",rate:640},
+  {code:216,name:"20ML POLISH D 50 OFF",rate:230},
+  {code:218,name:"DISHWASH 100 OFF",rate:300},
+  {code:219,name:"POWDER NEW BLISS 70 GM",rate:185},
+  {code:220,name:"POWDER NEW DIAMOND 70 GM",rate:185},
+  {code:221,name:"POWDER NEW ELEGANT 70 GM",rate:185},
+  {code:222,name:"GLASS LAVENDER 120 SAVE",rate:700},
+  {code:224,name:"INS AEROSOL SPRAY 100 OFF",rate:500},
+  {code:225,name:"SURFACE LAVENDER 1LTR",rate:650},
+  {code:226,name:"SURFACE FLORAL 1LTR",rate:650},
+  {code:228,name:"STRACH SPRAY WIN700",rate:875},
+  {code:229,name:"NEW STEEL CLEANER 500ML",rate:800},
+  {code:230,name:"NEW KITCHEN CLEANER",rate:800},
+  {code:231,name:"NEW REVALL R 250ML",rate:800},
+  {code:232,name:"NEW REVALL C 250ML",rate:800},
+  {code:233,name:"NEW REVALL A 250ML",rate:800},
+  {code:234,name:"NEW DRANEX",rate:750},
+  {code:235,name:"NEW RABIT 100ML",rate:215},
+  {code:236,name:"NEW RABIT 200ML",rate:325},
+  {code:237,name:"NEW BLEACH R 500ML",rate:600},
+  {code:238,name:"NEW BLEACH LEV 500ML",rate:600},
+  {code:239,name:"NEW WHITE PHENYL 225ML",rate:600},
+  {code:240,name:"NEW 2.75 LTR WHITE PHENYL 100 OFF",rate:550},
+  {code:241,name:"NEW WHITE PHENYL450ML",rate:800},
+  {code:242,name:"NEW AUTO SHINE TIN",rate:800},
+  {code:244,name:"NEW 300GM BLACK CAT",rate:550},
+  {code:245,name:"NEW 90ML DAKTAN POLISH",rate:900},
+  {code:246,name:"NEW 90ML BLACK POLISH",rate:900},
+  {code:247,name:"NEW 45 ML BLACK POLISH",rate:500},
+  {code:249,name:"NEW 20ML BLACK POLISH",rate:270},
+  {code:250,name:"NEW 20ML DAKTAN POLISH",rate:270},
+  {code:251,name:"NEW TOLIT CLEANER 250ML",rate:325},
+  {code:252,name:"NEW TOLIT CLEANER 500ML",rate:550},
+  {code:253,name:"NEW SURFACE FLORAL 500ML",rate:500},
+  {code:254,name:"NEW SURFACE LEV 500ML",rate:500},
+  {code:255,name:"NEW SURFACE LEM 500ML",rate:500},
+  {code:256,name:"NEW SURFACE PINE 500ML",rate:500},
+  {code:257,name:"NEW BRASS 100ML",rate:550},
+  {code:258,name:"NEW BRASS 200ML",rate:900},
+  {code:259,name:"GLASS CLEANER REG NEW",rate:850},
+  {code:260,name:"GLASS CLEANER LEV NEW",rate:850},
+  {code:261,name:"GLASS CLEANER ALL PURPOSE NEW",rate:850},
+  {code:262,name:"75 LIQ N 550",rate:550},
+  {code:264,name:"75 LIQ B 550",rate:550},
+  {code:265,name:"SHOE SHINE B 450",rate:450},
+  {code:266,name:"SHOE SHINE N 450",rate:450},
+  {code:267,name:"TUBE 45ML B /500",rate:500},
+  {code:268,name:"TUBE 45ML D /500",rate:500},
+  {code:272,name:"TUBE 45ML NEUTRAL /500",rate:500}
+];
+
+/* =========================================================
+   🧠 ایپلیکیشن لاجک
+   ========================================================= */
+let cart = {};           // { code: qty }
+let filtered = [...PRODUCTS];
+const currency = n => "Rs " + n.toLocaleString('en-PK');
+
+const $ = id => document.getElementById(id);
+const productListEl = $('productList');
+const emptyStateEl  = $('emptyState');
+const searchInput   = $('searchInput');
+const clearBtn      = $('clearBtn');
+const statsEl       = $('stats');
+const cartBar       = $('cartBar');
+const cartModal     = $('cartModal');
+
+/* ---------- Render Products ---------- */
+function renderProducts(list){
+  productListEl.innerHTML = '';
+  if(list.length === 0){
+    emptyStateEl.style.display = 'block';
+    return;
+  }
+  emptyStateEl.style.display = 'none';
+  const frag = document.createDocumentFragment();
+  list.forEach(p => {
+    const inCart = cart[p.code] ? 'in-cart' : '';
+    const card = document.createElement('div');
+    card.className = 'product';
+    card.innerHTML = `
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-meta">
+          <span class="product-code">#${p.code}</span>
+          <span class="product-rate">${currency(p.rate)}</span>
+        </div>
+      </div>
+      <button class="add-btn ${inCart}" onclick="addToCart(${p.code})" title="Add">+</button>
+    `;
+    frag.appendChild(card);
+  });
+  productListEl.appendChild(frag);
+  statsEl.textContent = `${list.length} product(s) found`;
+}
+
+/* ---------- Search ---------- */
+searchInput.addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  clearBtn.style.display = q ? 'block' : 'none';
+  if(!q){
+    filtered = [...PRODUCTS];
+  } else {
+    filtered = PRODUCTS.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      String(p.code).includes(q) ||
+      String(p.rate).includes(q)
+    );
+  }
+  renderProducts(filtered);
+});
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  clearBtn.style.display = 'none';
+  filtered = [...PRODUCTS];
+  renderProducts(filtered);
+});
+
+/* ---------- Cart Logic ---------- */
+function addToCart(code){
+  cart[code] = (cart[code] || 0) + 1;
+  toast('✅ Added to cart');
+  updateCartUI();
+  renderProducts(filtered);
+}
+
+function changeQty(code, delta){
+  cart[code] = (cart[code] || 0) + delta;
+  if(cart[code] <= 0) delete cart[code];
+  updateCartUI();
+  renderProducts(filtered);
+}
+
+function removeFromCart(code){
+  delete cart[code];
+  updateCartUI();
+  renderProducts(filtered);
+}
+
+function setQty(code, val){
+  const q = parseInt(val);
+  if(isNaN(q) || q <= 0) delete cart[code];
+  else cart[code] = q;
+  updateCartUI();
+  renderProducts(filtered);
+}
+
+function cartTotal(){
+  return Object.entries(cart).reduce((sum,[code,qty]) => {
+    const p = PRODUCTS.find(x => x.code === +code);
+    return sum + (p ? p.rate * qty : 0);
+  }, 0);
+}
+
+function cartCount(){
+  return Object.values(cart).reduce((a,b)=>a+b,0);
+}
+
+function updateCartUI(){
+  const count = cartCount();
+  const total = cartTotal();
+  if(count === 0){
+    cartBar.style.display = 'none';
+  } else {
+    cartBar.style.display = 'flex';
+    $('cartCountLabel').textContent = `${count} item(s)`;
+    $('cartTotalLabel').textContent = currency(total);
+  }
+  renderCartModal();
+}
+
+/* ---------- Cart Modal ---------- */
+function renderCartModal(){
+  const container = $('cartItemsContainer');
+  const totals = $('cartTotalsContainer');
+  const entries = Object.entries(cart);
+  if(entries.length === 0){
+    container.innerHTML = '<div class="empty">🛒 Cart is empty</div>';
+    totals.innerHTML = '';
+    $('checkoutForm').style.display = 'none';
+    return;
+  }
+  $('checkoutForm').style.display = 'block';
+  container.innerHTML = entries.map(([code,qty]) => {
+    const p = PRODUCTS.find(x => x.code === +code);
+    return `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="name">${p.name}</div>
+          <div class="rate">#${p.code} — ${currency(p.rate)}</div>
+        </div>
+        <div class="qty-controls">
+          <button onclick="changeQty(${p.code},-1)">−</button>
+          <input type="number" min="1" value="${qty}" onchange="setQty(${p.code}, this.value)" />
+          <button onclick="changeQty(${p.code},1)">+</button>
+        </div>
+        <div class="line-total">${currency(p.rate*qty)}</div>
+        <button class="remove-btn" onclick="removeFromCart(${p.code})">✕</button>
+      </div>
+    `;
+  }).join('');
+  totals.innerHTML = `<div class="totals"><span>Total</span><span>${currency(cartTotal())}</span></div>`;
+}
+
+function openModal(){
+  cartModal.classList.add('show');
+  renderCartModal();
+  $('orderSuccess').style.display = 'none';
+  $('checkoutForm').style.display = Object.keys(cart).length ? 'block' : 'none';
+}
+function closeModal(id){
+  $(id).classList.remove('show');
+}
+$('cartBar').addEventListener('click', e => {
+  if(e.target.id !== 'viewCartBtn' && e.target.closest('#viewCartBtn')) return;
+  openModal();
+});
+$('viewCartBtn').addEventListener('click', e => {
+  e.stopPropagation(); openModal();
+});
+cartModal.addEventListener('click', e => {
+  if(e.target === cartModal) closeModal('cartModal');
+});
+
+/* ---------- Place Order (Firebase) ---------- */
+async function placeOrder(){
+  const name  = $('customerName').value.trim();
+  const phone = $('customerPhone').value.trim();
+  const notes = $('customerNotes').value.trim();
+
+  if(!name || !phone){
+    toast('⚠️ Name and Phone are required');
+    return;
+  }
+  if(Object.keys(cart).length === 0){
+    toast('⚠️ Cart is empty');
+    return;
+  }
+
+  const btn = $('placeOrderBtn');
+  btn.disabled = true;
+  btn.textContent = 'Placing order...';
+
+  const items = Object.entries(cart).map(([code,qty]) => {
+    const p = PRODUCTS.find(x => x.code === +code);
+    return { code:p.code, name:p.name, rate:p.rate, qty, lineTotal:p.rate*qty };
+  });
+  const total = cartTotal();
+
+  try{
+    const docRef = await addDoc(collection(db, "orders"), {
+      customer: { name, phone, notes },
+      items,
+      total,
+      itemCount: items.length,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      source: "web_catalog"
+    });
+
+    // Success
+    $('checkoutForm').style.display = 'none';
+    $('cartItemsContainer').innerHTML = '';
+    $('cartTotalsContainer').innerHTML = '';
+    const success = $('orderSuccess');
+    success.style.display = 'block';
+    success.innerHTML = `
+      <div class="success-msg">
+        <div class="check">✓</div>
+        <h3>Order Placed Successfully!</h3>
+        <p>آپ کا آرڈر موصول ہو گیا ہے۔ ہم جلد رابطہ کریں گے۔</p>
+        <div class="order-id">Order ID: ${docRef.id.slice(0,10).toUpperCase()}</div>
+      </div>
+      <button class="btn-secondary" onclick="whatsappShare('${docRef.id}')">📱 Share on WhatsApp</button>
+      <button class="btn-secondary" onclick="resetAfterOrder()">🛍️ Continue Shopping</button>
+    `;
+    // Prepare WhatsApp link data
+    window._lastOrder = { id: docRef.id, name, phone, items, total };
+  } catch(err){
+    console.error(err);
+    toast('❌ Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirm Order';
+  }
+}
+
+function whatsappShare(orderId){
+  const o = window._lastOrder;
+  if(!o) return;
+  let msg = `*New Order* #${orderId.slice(0,10).toUpperCase()}\n`;
+  msg += `👤 ${o.name}\n📞 ${o.phone}\n\n`;
+  o.items.forEach(i => {
+    msg += `• ${i.name} × ${i.qty} = Rs ${i.lineTotal}\n`;
+  });
+  msg += `\n*Total: Rs ${o.total}*`;
+  // ⬇️ اپنا واٹس ایپ نمبر یہاں ڈالیں (country code کے ساتھ، بغیر + کے)
+  const myNumber = "923001234567";
+  window.open(`https://wa.me/${myNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function resetAfterOrder(){
+  cart = {};
+  updateCartUI();
+  renderProducts(filtered);
+  closeModal('cartModal');
+  $('customerName').value = '';
+  $('customerPhone').value = '';
+  $('customerNotes').value = '';
+}
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---------- Init ---------- */
+renderProducts(filtered);
+updateCartUI();
+
+// expose to global for inline onclick
+window.addToCart = addToCart;
+window.changeQty = changeQty;
+window.removeFromCart = removeFromCart;
+window.setQty = setQty;
+window.placeOrder = placeOrder;
+window.whatsappShare = whatsappShare;
+window.resetAfterOrder = resetAfterOrder;
+window.closeModal = closeModal;
+</script>
+</body>
+</html>
